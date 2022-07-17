@@ -1,0 +1,72 @@
+body:not(.noscript) #noscript-screen,
+body:not(.noasync)  #noasync-screen,
+body:not(.no-cdnjs) #no-cdnjs-screen,
+body:not(.no-asw)   #no-asw-screen,
+body:not(.main)     #main-screen
+{ display: none; }
+
+html, body { margin: 0; height: 100%; width: 100%; }
+body { background: #ccc; display: flex; justify-content: center; align-items: center; }
+
+.screen
+{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.error-box
+{
+    background: #fff;
+    font-size: 1.5em;
+    padding: .8em;
+    border: .3em solid #666;
+    border-radius: .3em;
+    max-width: 95vmin;
+    font-style: italic;
+}
+.error-box header { font-size: 150%; font-weight: bold; font-style: normal; font-variant: small-caps; }
+.error-box .pre { font-family: monospace; }
+
+#main-row
+{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+}
+@media (orientation: portrait) { #main-row { flex-direction: column; align-items: stretch; } }
+
+.main-box
+{
+    margin: 5vmin;
+    padding: 2em;
+    border: 2px solid #666;
+    border-radius: 3vmin;
+    background: #eee;    
+    
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#input-box > label, #input-box > .label
+{
+    font-variant: small-caps;
+    font-weight: bold;
+    color: #555;
+    
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+    border-image: linear-gradient(to bottom right, transparent 60%, #777 40%) 1 40%;
+    padding: 0 .5em;
+}
+#input-box > :not(label):not(.label)
+{ 
+    margin-left: 3em;
+    margin-top: .3em;
+}
+#input-box > :not(label):not(.label):not(:last-child) { margin-bottom: 1em; }
+
+#tmp-summary { margin-bottom: 1em; }

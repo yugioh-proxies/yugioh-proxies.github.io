@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Yu-Gi-Oh! Proxy Card Generator</title>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
+        <script defer src="https://a-small-world.github.io/carddata.js"></script>
+        <script defer src="index.js"></script>
+        <link rel="stylesheet" href="index.css">
+    </head>
+    <body class="noscript">
+        <script>document.body.className = 'noasync';</script>
+        <div id="noscript-screen" class="screen">
+            <div class="error-box"><header>JavaScript is required.</header>Please whitelist us in your NoScript plugin.</div>
+        </div>
+        <div id="noasync-screen" class="screen">
+            <div class="error-box"><header>Your browser is not supported.</header>Our main script file failed to load. Are you using a very old web browser?<br>If that isn't it, you may have also encountered a bug. Sorry!</div>
+        </div>
+        <div id="no-cdnjs-screen" class="screen">
+            <div class="error-box"><header>Failed to load jsPDF.</header>Please whitelist <span class="pre">cdnjs.cloudflare.com</span> in your NoScript plugin.</div>
+        </div>
+        <div id="no-asw-screen" class="screen">
+            <div class="error-box"><header>Failed to load carddata.js.</header>Please whitelist <span class="pre">a-small-world.github.io</span> in your NoScript plugin.</div>
+        </div>
+        <div id="main-screen" class="screen">
+            <div id="main-row">
+                <div id="input-box" class="main-box">
+                    <label>Deck Input</label>
+                    <span>
+                        <input type="file" id="decklist" accept="*.ydk">
+                    </span>
+                    <label>Paper Format</label>
+                    <span>
+                        <div>
+                            <select id="paper-format">
+                                <option value="a4">A4</option>
+                                <option value="letter">Letter</option>
+                            </select>
+                        </div>
+                        <!--<div>
+                            <input id="paper-width"> cm
+                            by
+                            <input id="paper-height"> cm
+                        </div>-->
+                    </span>
+                    <label>Print Margins</label>
+                    <span>
+                        <div>
+                            <select id="print-margins">
+                                <option value="default">default</option>
+                            </select>
+                        </div>
+                    </span>
+                    <label>Orientation</label>
+                    <span>
+                        <select id="orientation">
+                            <option value="auto">Auto: Select best</option>
+                            <option value="portrait">Force: Portrait</option>
+                            <option value="landscape">Force: Landscape</option>
+                        </select>
+                    </span>
+                    <label>Card Size</label>
+                    <span>
+                        <input type="number" id="card-width" value="53.51">cm
+                        by
+                        <input type="number" id="card-height" value="78">cm
+                    </span>
+                    <label>Image Source</label>
+                    <span>
+                        <select id="artwork-source">
+                            <option value="ygoprodeck">YGOPRODeck</option>
+                            <option value="neuron">Neuron</option>
+                        </select>
+                    </span>
+                </div>
+                <div id="output-box" class="main-box">
+                    <span id="tmp-summary"></span>
+                    <button id="make-pdf">Make PDF</button>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
