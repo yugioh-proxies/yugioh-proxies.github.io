@@ -51,22 +51,12 @@ body { background: #ccc; display: flex; justify-content: center; align-items: ce
     align-items: flex-start;
 }
 
-#input-box > label, #input-box > .label
-{
-    font-variant: small-caps;
-    font-weight: bold;
-    color: #555;
-    
-    border-bottom: 1px solid;
-    border-right: 1px solid;
-    border-image: linear-gradient(to bottom right, transparent 60%, #777 40%) 1 40%;
-    padding: 0 .5em;
-}
-#input-box > :not(label):not(.label)
-{ 
-    margin-left: 3em;
-    margin-top: .3em;
-}
-#input-box > :not(label):not(.label):not(:last-child) { margin-bottom: 1em; }
+#card-size-percent, #card-width, #card-height, #gap-width, #gap-height { width: 3em; }
+
+#lock-aspect-ratio:not(:checked) ~ #card-size-percent-box,
+#lock-aspect-ratio:checked       ~ #card-size-loose-box
+{ display: none; }
+
+#card-size-percent-box { display: flex; flex-direction: row; justify-content: space-evenly; }
 
 #tmp-summary { margin-bottom: 1em; }

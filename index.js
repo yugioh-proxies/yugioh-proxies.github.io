@@ -13,6 +13,9 @@ if (!window.ResolvePasscode)
     return;
 }
 
+const BASE_CARD_WIDTH = 59;
+const BASE_CARD_HEIGHT = 86;
+
 document.body.className = 'main';
 
 let currentYDKContent = '';
@@ -37,12 +40,13 @@ const DEFAULT_FORMATS = {
 const DEFAULT_PRINT_MARGINS = { left: 10, right: 10, top: 10, bottom: 10 };
 
 const _howManyFit = ((space, each, gap) => Math.floor((space+gap)/(each+gap)));
+const _fitThisMany = ((space, gap, n) => (((space+gap)/n)-gap));
 const ValidateInputAndGenerateParameters = (() =>
 {
     const passcodes = currentYDKContent.split('\n').map((t) => parseInt(t.trim())).filter(isFinite).sort();
 
     let format, pageWidth, pageHeight;
-    const paperFormatValue = document.getElementById('paper-format').value;
+    const paperFormatValue = document.querySelector('input[name="paper-format"]:checked').value;
     if (paperFormatValue === 'custom')
     {
         // todo
@@ -52,21 +56,33 @@ const ValidateInputAndGenerateParameters = (() =>
         ({format, pageSize: [pageWidth, pageHeight]} = DEFAULT_FORMATS[paperFormatValue]);
     }
     
-    const cardSize = [+document.getElementById('card-width').value, +document.getElementById('card-height').value];
+    let cardSize;
+    if (document.getElementById('lock-aspect-ratio').checked)
+    {
+        const aspectRatio = .01*+document.getElementById('card-size-percent').value;
+        cardSize = [(BASE_CARD_WIDTH * aspectRatio), (BASE_CARD_HEIGHT * aspectRatio)];
+        document.getElementById('card-width').value = cardSize[0].toPrecision(2);
+        document.getElementById('card-height').value = cardSize[1].toPrecision(2);
+    }
+    else
+    {
+        cardSize = [+document.getElementById('card-width').value, +document.getElementById('card-height').value];
+        document.getElementById('card-size-percent').value = ((cardSize[0]/BASE_CARD_WIDTH)*100).toPrecision(2);
+    }
     const [cardWidth, cardHeight] = cardSize;
     const cardAspectRatio = cardSize[0]/cardSize[1];
     if ((cardAspectRatio < .65) || (cardAspectRatio > .7))
         console.warn('Strange aspect ratio',cardAspectRatio,'image will be noticeably squished');
     
     let printMargins = DEFAULT_PRINT_MARGINS;
-    if (document.getElementById('print-margins').value !== 'default')
+    if (document.querySelector('input[name="print-margins"]:checked').value !== 'default')
     {
         // todo
     }
     
     // todo sanity check margins
     
-    const gap = [.3,.3];
+    const gap = [+document.getElementById('gap-width').value,+document.getElementById('gap-height').value];
     
     const printableWidth = pageWidth - (printMargins.left + printMargins.right);
     const printableHeight = pageHeight - (printMargins.top + printMargins.bottom);
@@ -80,7 +96,7 @@ const ValidateInputAndGenerateParameters = (() =>
     const cardsPerPageLandscape = cardsPerRowLandscape * rowsPerPageLandscape;
     
     let orientation;
-    switch (document.getElementById('orientation').value)
+    switch (document.querySelector('input[name="orientation"]:checked').value)
     {
         case 'portrait':
             orientation = 'portrait';
@@ -112,7 +128,7 @@ const ValidateInputAndGenerateParameters = (() =>
     ];
     
     let artworkFn;
-    if (document.getElementById('artwork-source').value === 'neuron')
+    if (document.querySelector('input[name="artwork-source"]:checked').value === 'neuron')
         artworkFn = _artworkUrlNeuron;
     else
         artworkFn = _artworkUrlYGOPD;
@@ -122,6 +138,7 @@ const ValidateInputAndGenerateParameters = (() =>
         orientation,
         format,
         pageSize,
+        printableSize: [ printableWidth, printableHeight ],
         
         cardSize,
         cardsPerRow,
@@ -136,6 +153,11 @@ const ValidateInputAndGenerateParameters = (() =>
 
 const VisualizeOutputParameters = ((params) =>
 {
+    if (!params)
+    {
+        document.getElementById('tmp-summary').innerText = 'Something has gone terribly wrong...';
+        return;
+    }
     const hasDeck = !!params.passcodes.length;
     document.getElementById('make-pdf').disabled = !hasDeck;
     const cardsPerPage = (params.cardsPerRow * params.rowsPerPage);
@@ -215,6 +237,88 @@ for (const elm of document.getElementById('input-box').getElementsByTagName('sel
 
 for (const elm of document.getElementById('input-box').getElementsByTagName('input'))
     elm.addEventListener('change', ProcessInputUpdateOutput);
+
+const _relativeSizeListCache = {};
+const _getOptimalRelativeSizes = ((arr) =>
+{
+    const key = JSON.stringify(arr);
+    const cached = _relativeSizeListCache[key];
+    if (cached) return cached;
+    
+    const [printableWidth, printableHeight, gapX, gapY] = arr;
+    
+    const optima = [];
+    let relativeSize = 1;
+    while (relativeSize > .1)
+    {
+        const nX = _howManyFit(printableWidth, BASE_CARD_WIDTH*relativeSize, gapX);
+        const nY = _howManyFit(printableHeight, BASE_CARD_HEIGHT*relativeSize, gapY);
+        optima.push({ sz: relativeSize*100, n: nX*nY });
+        
+        const newSizeX = _fitThisMany(printableWidth, gapX, nX+1)/BASE_CARD_WIDTH;
+        const newSizeY = _fitThisMany(printableHeight, gapY, nY+1)/BASE_CARD_HEIGHT;
+        
+        relativeSize = Math.floor(Math.max(newSizeX, newSizeY)*10000)/10000;
+    }
+    
+    _relativeSizeListCache[key] = optima;
+    return optima;
+});
+const _nextLowerSize = ((table, my) => { for (const {sz, n} of table) if (n > my) return sz; return NaN; });
+const _nextHigherSize = ((table, my) => { let old = NaN; for (const {sz, n} of table){ console.log(my,sz,n); if (n >= my) break; else old = sz;} return old; })
+let _cardSizeStep; _cardSizeStep = ((reduce) =>
+{
+    const { printableSize: [printableWidth, printableHeight], gap: [gapX, gapY], cardsPerRow, rowsPerPage } =  ValidateInputAndGenerateParameters();
+    const tablePortrait = _getOptimalRelativeSizes([printableWidth, printableHeight, gapX, gapY]);
+    const tableLandscape = _getOptimalRelativeSizes([printableHeight, printableWidth, gapX, gapY]);
+    const currentSize = +document.getElementById('card-size-percent').value;
+    
+    const cardsPerPage = (cardsPerRow*rowsPerPage);
+    const orientationSetting = document.querySelector('input[name="orientation"]:checked').value;
+    if (reduce)
+    {
+        const nextLowerP = _nextLowerSize(tablePortrait, cardsPerPage);
+        const nextLowerL = _nextLowerSize(tableLandscape, cardsPerPage);
+        let target;
+        if (!isFinite(nextLowerL) || (orientationSetting === 'portrait'))
+            target = nextLowerP;
+        else if (!isFinite(nextLowerP) || (orientationSetting === 'landscape'))
+            target = nextLowerL;
+        else
+            target = Math.max(nextLowerP, nextLowerL);
+        return isFinite(target) && (target-0.005).toFixed(2);
+    }
+    else
+    {
+        const nextHigherP = _nextHigherSize(tablePortrait, cardsPerPage);
+        const nextHigherL = _nextHigherSize(tableLandscape, cardsPerPage);
+        console.log(tablePortrait, tableLandscape);
+        console.log(nextHigherP, nextHigherL);
+        let target;
+        if (!isFinite(nextHigherL) || ((nextHigherL-currentSize) < 0.05) || (orientationSetting === 'portrait'))
+            target = nextHigherP;
+        else if (!isFinite(nextHigherP) || ((nextHigherP-currentSize) < 0.05) || (orientationSetting === 'landscape'))
+            target = nextHigherL;
+        else
+            target = Math.min(nextHigherP, nextHigherL);
+            
+        return isFinite(target) && (target-0.005).toFixed(2);
+    }
+});
+document.getElementById('reduce-card-size').addEventListener('click', () =>
+{
+    const result = _cardSizeStep(true);
+    if (!result) return;
+    document.getElementById('card-size-percent').value = result;
+    ProcessInputUpdateOutput();
+});
+document.getElementById('increase-card-size').addEventListener('click', () =>
+{
+    const result = _cardSizeStep(false);
+    if (!result) return;
+    document.getElementById('card-size-percent').value = result;
+    ProcessInputUpdateOutput();
+});
 
 const _decklistInput = document.getElementById('decklist');
 let _currentYDKContentToken = null;

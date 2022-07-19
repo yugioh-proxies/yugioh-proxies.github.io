@@ -25,53 +25,77 @@
         <div id="main-screen" class="screen">
             <div id="main-row">
                 <div id="input-box" class="main-box">
-                    <label>Deck Input</label>
-                    <span>
+                    <fieldset>
+                        <legend>Deck Input</legend>
                         <input type="file" id="decklist" accept="*.ydk">
-                    </span>
-                    <label>Paper Format</label>
-                    <span>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Paper Format</legend>
                         <div>
-                            <select id="paper-format">
-                                <option value="a4">A4</option>
-                                <option value="letter">Letter</option>
-                            </select>
+                            <input type="radio" id="paper-format-a4" name="paper-format" value="a4" checked>
+                            <label for="paper-format-a4">A4</label>
                         </div>
-                        <!--<div>
-                            <input id="paper-width"> cm
+                        <div>
+                            <input type="radio" id="paper-format-letter" name="paper-format" value="letter">
+                            <label for="paper-format-letter">Letter</label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Print Margins</legend>
+                        <div>
+                            <input type="radio" id="print-margins-default" name="print-margins" value="default" checked>
+                            <label for="print-margins-default">Default</label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Orientation</legend>
+                        <div>
+                            <input type="radio" id="orientation-auto" name="orientation" value="auto" checked>
+                            <label for="orientation-auto">Auto: Select best</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="orientation-portrait" name="orientation" value="portrait">
+                            <label for="orientation-portrait">Force: Portrait</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="orientation-landscape" name="orientation" value="landscape">
+                            <label for="orientation-landscape">Force: Landscape</label>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Card Size</legend>
+                        <input type="checkbox" id="lock-aspect-ratio" checked>
+                        <label for="lock-aspect-ratio">Lock aspect ratio</label>
+                        <div id="card-size-percent-box">
+                            <button id="reduce-card-size">-</button>
+                            <span><input type="text" inputmode="decimal" id="card-size-percent" value="93.89">%</span>
+                            <button id="increase-card-size">+</button>
+                        </div>
+                        <div id="card-size-loose-box">
+                            <input type="text" inputmode="decimal" id="card-width">mm
                             by
-                            <input id="paper-height"> cm
-                        </div>-->
-                    </span>
-                    <label>Print Margins</label>
-                    <span>
-                        <div>
-                            <select id="print-margins">
-                                <option value="default">default</option>
-                            </select>
+                            <input type="text" inputmode="decimal" id="card-height">mm
                         </div>
-                    </span>
-                    <label>Orientation</label>
-                    <span>
-                        <select id="orientation">
-                            <option value="auto">Auto: Select best</option>
-                            <option value="portrait">Force: Portrait</option>
-                            <option value="landscape">Force: Landscape</option>
-                        </select>
-                    </span>
-                    <label>Card Size</label>
-                    <span>
-                        <input type="number" id="card-width" value="53.51">cm
-                        by
-                        <input type="number" id="card-height" value="78">cm
-                    </span>
-                    <label>Image Source</label>
-                    <span>
-                        <select id="artwork-source">
-                            <option value="ygoprodeck">YGOPRODeck</option>
-                            <option value="neuron">Neuron</option>
-                        </select>
-                    </span>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Intercard gap</legend>
+                        <div>
+                            <input type="text" inputmode="decimal" id="gap-width" value="0">mm
+                            by
+                            <input type="text" inputmode="decimal" id="gap-height" value="0">mm
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Image Source</legend>
+                        <div>
+                            <input type="radio" id="artwork-source-ygoprodeck" name="artwork-source" value="ygoprodeck" checked>
+                            <label for="artwork-source-ygoprodeck">YGOPRODeck</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="artwork-source-neuron" name="artwork-source" value="neuron">
+                            <label for="artwork-source-neuron">Neuron</label>
+                        </div>
+                    </fieldset>
                 </div>
                 <div id="output-box" class="main-box">
                     <span id="tmp-summary"></span>
