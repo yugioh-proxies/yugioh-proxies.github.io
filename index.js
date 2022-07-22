@@ -344,68 +344,91 @@ for (const elm of document.getElementById('input-box').getElementsByTagName('inp
     elm.addEventListener('change', ProcessInputUpdateOutput);
 
 const _relativeSizeListCache = {};
-const _getOptimalRelativeSizes = ((arr) =>
+const GetOptimalRelativeSizes = ((arr) =>
 {
     const key = JSON.stringify(arr);
     const cached = _relativeSizeListCache[key];
     if (cached) return cached;
     
-    const [printableWidth, printableHeight, gapX, gapY] = arr;
+    const [portraitPrintableWidth, portraitPrintableHeight, gapX, gapY] = arr;
     
-    const optima = [];
-    let relativeSize = 1;
-    while (relativeSize > .1)
+    const optima = {};
+    for (const [k, printableWidth, printableHeight] of [['portrait', portraitPrintableWidth, portraitPrintableHeight], ['landscape', portraitPrintableHeight, portraitPrintableWidth]])
     {
-        const nX = _howManyFit(printableWidth, BASE_CARD_WIDTH*relativeSize, gapX);
-        const nY = _howManyFit(printableHeight, BASE_CARD_HEIGHT*relativeSize, gapY);
-        optima.push({ sz: relativeSize*100, n: nX*nY });
-        
-        const newSizeX = _fitThisMany(printableWidth, gapX, nX+1)/BASE_CARD_WIDTH;
-        const newSizeY = _fitThisMany(printableHeight, gapY, nY+1)/BASE_CARD_HEIGHT;
-        
-        relativeSize = Math.floor(Math.max(newSizeX, newSizeY)*10000)/10000;
+        const dedup = {'1':true};
+        const queue = [1];
+        while (queue.length)
+        {
+            const relativeSize = queue.pop();
+            const nX = _howManyFit(printableWidth, BASE_CARD_WIDTH*relativeSize, gapX);
+            const nY = _howManyFit(printableHeight, BASE_CARD_HEIGHT*relativeSize, gapY);
+            const n = (nX*nY);
+            const target = (optima[n] || (optima[n] = {}));
+            
+            const szPct = relativeSize*100;
+            if ((target[k] || 0) < szPct)
+            {
+                target[k] = szPct;
+                if ((target.auto || 0) < szPct)
+                    target.auto = szPct;
+            }
+            
+            const newSizeX = Math.floor(_fitThisMany(printableWidth, gapX, nX+1)/BASE_CARD_WIDTH*10000)/10000;
+            const newSizeY = Math.floor(_fitThisMany(printableHeight, gapY, nY+1)/BASE_CARD_HEIGHT*10000)/10000;
+            if ((newSizeX >= .25) && !dedup[newSizeX])
+            {
+                queue.push(newSizeX);
+                dedup[newSizeX] = true;
+            }
+            if ((newSizeY >= .25) && !dedup[newSizeY])
+            {
+                queue.push(newSizeY);
+                dedup[newSizeY] = true;
+            }
+        }
     }
     
-    _relativeSizeListCache[key] = optima;
-    return optima;
+    const sortedOptima = Object.entries(optima).sort((a,b) => (b[0]-a[0]));
+    
+    const result = {}
+    for (const k of ['auto','portrait','landscape'])
+    {
+        result[k] = [];
+        let last = 0;
+        // n are strictly descending, relative sizes should be getting bigger
+        for (const [n, obj] of sortedOptima)
+        {
+            const d = obj[k];
+            if (!d || ((d-0.5) <= last)) continue;
+            last = d;
+            result[k].push(d);
+        }
+    }
+    
+    _relativeSizeListCache[key] = result;
+    return result;
 });
-const _nextLowerSize = ((table, my) => { for (const {sz, n} of table) if (n > my) return sz; return NaN; });
-const _nextHigherSize = ((table, my) => { let old = NaN; for (const {sz, n} of table) if (n >= my) break; else old = sz; return old; })
 let _cardSizeStep; _cardSizeStep = ((reduce) =>
 {
-    const { printableSize: [printableWidth, printableHeight], gap: [gapX, gapY], cardsPerRow, rowsPerPage } =  ValidateInputAndGenerateParameters();
-    const tablePortrait = _getOptimalRelativeSizes([printableWidth, printableHeight, gapX, gapY]);
-    const tableLandscape = _getOptimalRelativeSizes([printableHeight, printableWidth, gapX, gapY]);
-    const currentSize = +document.getElementById('card-size-percent').value;
-    
-    const cardsPerPage = (cardsPerRow*rowsPerPage);
+    const params = ValidateInputAndGenerateParameters();
     const orientationSetting = document.querySelector('input[name="orientation"]:checked').value;
+    const sortedOptima = GetOptimalRelativeSizes([...params.printableSize, ...params.gap])[orientationSetting];
+    
+    const currentSize = +document.getElementById('card-size-percent').value;
     if (reduce)
     {
-        const nextLowerP = _nextLowerSize(tablePortrait, cardsPerPage);
-        const nextLowerL = _nextLowerSize(tableLandscape, cardsPerPage);
-        let target;
-        if (!isFinite(nextLowerL) || (orientationSetting === 'portrait'))
-            target = nextLowerP;
-        else if (!isFinite(nextLowerP) || (orientationSetting === 'landscape'))
-            target = nextLowerL;
-        else
-            target = Math.max(nextLowerP, nextLowerL);
-        return isFinite(target) && (target-0.005).toFixed(2);
+        let last;
+        for (const size of sortedOptima)
+            if ((size-currentSize) < -0.2)
+                last = size;
+            else
+                return isFinite(last) && (last-0.005).toFixed(2);
     }
     else
     {
-        const nextHigherP = _nextHigherSize(tablePortrait, cardsPerPage);
-        const nextHigherL = _nextHigherSize(tableLandscape, cardsPerPage);
-        let target;
-        if (!isFinite(nextHigherL) || ((nextHigherL-currentSize) < 0.05) || (orientationSetting === 'portrait'))
-            target = nextHigherP;
-        else if (!isFinite(nextHigherP) || ((nextHigherP-currentSize) < 0.05) || (orientationSetting === 'landscape'))
-            target = nextHigherL;
-        else
-            target = Math.min(nextHigherP, nextHigherL);
-            
-        return isFinite(target) && (target-0.005).toFixed(2);
+        for (const size of sortedOptima)
+            if ((size-currentSize) > 0.2)
+                return (size-0.005).toFixed(2);
     }
 });
 document.getElementById('reduce-card-size').addEventListener('click', () =>
