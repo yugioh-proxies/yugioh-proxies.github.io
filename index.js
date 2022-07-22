@@ -18,12 +18,31 @@ const BASE_CARD_HEIGHT = 86;
 
 document.body.className = 'main';
 
-let currentYDKContent = '';
-
+const SAMPLE_PASSCODE = '46986414';
+const _GetArtworkTemplate = ((fn, passcode) =>
+{
+    const artwork = new Image();
+    const obj = {
+        isReady: false,
+        artwork,
+    };
+    obj.ready = (async () =>
+    {
+        const url = await fn(passcode);
+        artwork.src = url;
+        await artwork.decode();
+        obj.isReady = true;
+        return artwork;
+    })();
+    return obj;
+});
 const _artworkFn = ((fn) =>
 {
-    fn.sample = (async () => { const img = new Image(); img.src = await fn('46986414'); await img.decode(); return img; })();
-    return fn;
+    const cache = {};
+    const wrapper = ((p) => (cache[p] || (cache[p] = _GetArtworkTemplate(fn, p))));
+    // preload
+    wrapper(SAMPLE_PASSCODE)
+    return wrapper;
 });
 const _artworkUrlYGOPD = _artworkFn(async (passcode) =>
 {
@@ -175,7 +194,7 @@ const VisualizeOutputParameters = ((params) =>
         return;
     }
     const cardCount = params.passcodes.length;
-    const hasDeck = (cardCount === 0);
+    const hasDeck = (cardCount !== 0);
     const cardsPerPage = (params.cardsPerRow * params.rowsPerPage);
     const pageCount = Math.ceil(params.passcodes.length / cardsPerPage);
     document.getElementById('count-cards').innerText = params.passcodes.length;
@@ -192,7 +211,15 @@ const VisualizeOutputParameters = ((params) =>
         // sleeves are 62 by 89 mm
         // cards are 59 by 86 mm
         const cardBack = await _cardback;
-        const sampleArt = await params.artworkFn.sample;
+        let sampleArt;
+        if (params.passcodes.length)
+            sampleArt = params.artworkFn(params.passcodes[0]);
+        
+        if (sampleArt && sampleArt.isReady)
+            sampleArt = sampleArt.artwork;
+        else
+            sampleArt = await params.artworkFn(SAMPLE_PASSCODE).ready;
+        
         if (cardPreviewCanvas.tok !== tok) return;
         const ctx = cardPreviewCanvas.getContext('2d');
         ctx.fillStyle = 'rgba(39, 68, 63, 1)';
@@ -213,7 +240,7 @@ const VisualizeOutputParameters = ((params) =>
     pagePreviewCanvas.tok = tok;
     (async () =>
     {
-        const sampleArt = await params.artworkFn.sample;
+        const defaultSampleArt = await params.artworkFn(SAMPLE_PASSCODE).ready;
         if (pagePreviewCanvas.tok !== tok) return;
         const ctx = pagePreviewCanvas.getContext('2d');
         ctx.clearRect(0, 0, pagePreviewCanvas.width, pagePreviewCanvas.height);
@@ -235,6 +262,13 @@ const VisualizeOutputParameters = ((params) =>
         );
         for (let x=0; x<params.cardsPerRow; ++x) for (let y=0; y<params.rowsPerPage; ++y)
         {
+            const idx = x+y*params.cardsPerRow;
+            let sampleArt = (idx < params.passcodes.length) && params.artworkFn(params.passcodes[idx]);
+            if (sampleArt && sampleArt.isReady)
+                sampleArt = sampleArt.artwork;
+            else
+                sampleArt = defaultSampleArt;
+            
             const left = drawLeft + (params.start[0] + x*(params.cardSize[0]+params.gap[0]))*PX_PER_MM;
             const top = drawTop + (params.start[1] + y*(params.cardSize[1]+params.gap[1]))*PX_PER_MM;
             ctx.drawImage(sampleArt, left, top, PX_PER_MM * params.cardSize[0], PX_PER_MM * params.cardSize[1]);
@@ -261,13 +295,10 @@ const GeneratePDFFromParameters = (async (params) =>
     
     await Promise.all(params.passcodes.map(async (p,i) =>
     {
-        const imgElm = new Image();
-        imgElm.src = await params.artworkFn(p);
-        await imgElm.decode();
-        
+        const artwork = await params.artworkFn(p).ready;
         const {page, coords: [x,y]} = _place(i);
         pdf.setPage(page+1);
-        pdf.addImage(imgElm, 'png', x, y, params.cardSize[0], params.cardSize[1]);
+        pdf.addImage(artwork, 'png', x, y, params.cardSize[0], params.cardSize[1]);
     }));
     
     const result = pdf.output('blob', 'proxies.pdf');
@@ -401,9 +432,6 @@ document.getElementById('decks-container').addEventListener('click', function(e)
 const _decklistInput = document.getElementById('decklist');
 _decklistInput.addEventListener('change', () =>
 {
-    const token = {};
-    _currentYDKContentToken = token;
-    currentYDKContent = '';
     const file = _decklistInput.files[0];
     if (!file) return;
     _decklistInput.value = '';
