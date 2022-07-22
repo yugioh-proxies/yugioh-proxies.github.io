@@ -263,6 +263,8 @@ const VisualizeOutputParameters = ((params) =>
         for (let x=0; x<params.cardsPerRow; ++x) for (let y=0; y<params.rowsPerPage; ++y)
         {
             const idx = x+y*params.cardsPerRow;
+            if (params.passcodes.length && (params.passcodes.length <= idx)) continue;
+            
             let sampleArt = (idx < params.passcodes.length) && params.artworkFn(params.passcodes[idx]);
             if (sampleArt && sampleArt.isReady)
                 sampleArt = sampleArt.artwork;
