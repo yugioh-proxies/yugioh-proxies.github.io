@@ -49,7 +49,7 @@ body { font-family: verdana, arial, helvetica, sans-serif; }
     
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
 }
 
 #card-size-percent, #card-width, #card-height, #gap-width, #gap-height { width: 3.2em; text-align: center; }
@@ -59,6 +59,13 @@ body { font-family: verdana, arial, helvetica, sans-serif; }
 { display: none; }
 
 #card-size-percent-box { display: flex; flex-direction: row; justify-content: space-evenly; }
+
+#decks-box { align-self: stretch; }
+#decks-container:empty::before { content: "No Decks selected"; font-style: italic; text-align: center; display: block; }
+#decks-container { display: flex; flex-direction: column; }
+#decks-container .entry { font-size: 70%; display: flex; flex-direction: row; padding: .2em .5em; border-radius: .3em; cursor: pointer; }
+#decks-container .delete { background: rgba(0,0,0,15%); display: inline-block; padding: 0 .3em; }
+#decks-container .name, #decks-container .status { flex-grow: 1; flex-basis: 0; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 
 #output-box { display: grid; }
 #pagecount-box { grid-row: 1; grid-column: 1 / span 2; }

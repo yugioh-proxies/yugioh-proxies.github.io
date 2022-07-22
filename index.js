@@ -48,7 +48,13 @@ const _howManyFit = ((space, each, gap) => Math.floor((space+gap)/(each+gap)));
 const _fitThisMany = ((space, gap, n) => (((space+gap)/n)-gap));
 const ValidateInputAndGenerateParameters = (() =>
 {
-    const passcodes = currentYDKContent.split('\n').map((t) => parseInt(t.trim())).filter(isFinite).sort();
+    const passcodes = [];
+    for (const elm of document.getElementById('decks-container').children)
+    {
+        const p = elm.passcodes;
+        if (!p) continue;
+        passcodes.push(...(p.filter(({enabled}) => enabled).map(({passcode}) => passcode)));
+    }
 
     let format, pageWidth, pageHeight;
     const paperFormatValue = document.querySelector('input[name="paper-format"]:checked').value;
@@ -384,8 +390,15 @@ document.getElementById('increase-card-size').addEventListener('click', () =>
     ProcessInputUpdateOutput();
 });
 
+document.getElementById('decks-container').addEventListener('click', function(e)
+{
+    if (e.target.closest('.entry'))
+        return;
+    if (!this.children.length)
+        document.getElementById('decklist').click();
+});
+
 const _decklistInput = document.getElementById('decklist');
-let _currentYDKContentToken = null;
 _decklistInput.addEventListener('change', () =>
 {
     const token = {};
@@ -393,8 +406,41 @@ _decklistInput.addEventListener('change', () =>
     currentYDKContent = '';
     const file = _decklistInput.files[0];
     if (!file) return;
+    _decklistInput.value = '';
     
-    file.text().then((t) => { if (_currentYDKContentToken !== token) return; currentYDKContent = t; ProcessInputUpdateOutput(); });
+    const parent = document.getElementById('decks-container');
+    const entry = document.createElement('div');
+    entry.style.backgroundColor = ('hsl('+(180+parent.children.length*74)+'deg, 100%, 75%)');
+    entry.className = 'entry loading';
+    const cards = document.createElement('span');
+    cards.className = 'status';
+    cards.innerText = 'Loading…';
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.innerText = file.name;
+    const del = document.createElement('span');
+    del.className = 'delete';
+    del.innerText = '\uD83D\uDDD1\uFE0E';
+    del.addEventListener('click', () => { parent.removeChild(entry); });
+    entry.appendChild(name);
+    entry.appendChild(cards);
+    entry.appendChild(del);
+    
+    parent.appendChild(entry);
+    file.text().then((t) =>
+    {
+        entry.classList.remove('loading');
+        entry.passcodes = t.split('\n').map((t) => parseInt(t.trim())).filter(isFinite).map((passcode) => ({ passcode, enabled: true }));
+        cards.innerText = ((entry.passcodes.length)+'/'+(entry.passcodes.length)+' selected');
+        ProcessInputUpdateOutput();
+    });
+    
+    entry.addEventListener('click', (e) => 
+    {
+        if (e.target.classList.contains('delete'))
+            return;
+        window.alert('not yet implemented, sorry');
+    });
 });
 
 document.getElementById('make-pdf').addEventListener('click', () => { GeneratePDFFromParameters(_currentGenerationParameters); });

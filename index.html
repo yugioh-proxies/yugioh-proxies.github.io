@@ -26,10 +26,6 @@
             <div id="main-row">
                 <div id="input-box" class="main-box">
                     <fieldset>
-                        <legend>Deck Input</legend>
-                        <input type="file" id="decklist" accept="*.ydk">
-                    </fieldset>
-                    <fieldset>
                         <legend>Paper Format</legend>
                         <div>
                             <input type="radio" id="paper-format-a4" name="paper-format" value="a4" checked>
@@ -95,6 +91,16 @@
                             <input type="radio" id="artwork-source-neuron" name="artwork-source" value="neuron">
                             <label for="artwork-source-neuron">Neuron</label>
                         </div>
+                    </fieldset>
+                </div>
+                <div id="decks-box" class="main-box">
+                    <fieldset>
+                        <legend>Decks</legend>
+                        <div id="decks-container"></div>
+                    </fieldset>
+                    <fieldset style="margin-top: auto;">
+                        <legend>Add Deck</legend>
+                        <input type="file" id="decklist" accept="*.ydk">
                     </fieldset>
                 </div>
                 <div id="output-box" class="main-box">
