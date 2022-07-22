@@ -98,8 +98,32 @@
                     </fieldset>
                 </div>
                 <div id="output-box" class="main-box">
-                    <span id="tmp-summary"></span>
-                    <button id="make-pdf">Make PDF</button>
+                    <fieldset id="pagecount-box">
+                        <div id="pagecount-box-ctr">
+                            <span id="count-cards" class="num" style="grid-row: 1; grid-column: 1;">0</span>
+                            <span style="grid-row: 1; grid-column: 2;">cards</span>
+                            <span style="grid-row: 1; grid-column: 3; justify-self: flex-end;">&#xF7;</span>
+                            
+                            <span id="cards-per-page" class="num" style="grid-row: 2; grid-column: 1;">0</span>
+                            <span style="grid-row: 2; grid-column: 2 / span 2;">cards per page</span>
+                            
+                            <hr style="grid-row: 3; grid-column: 1 / span 3;">
+                            
+                            <span id="pages-to-print" class="num" style="grid-row: 4; grid-column: 1;">0</span>
+                            <span style="grid-row: 4; grid-column: 2 / span 2">pages to print</span>
+                        </div>
+                    </fieldset>
+                    <fieldset id="card-preview-box">
+                        <legend>Card Preview</legend>
+                        <canvas id="card-preview" width="806" height="1157"></canvas>
+                    </fieldset>
+                    <fieldset id="page-preview-box">
+                        <legend>Page Preview</legend>
+                        <canvas id="page-preview" width="800" height="800"></canvas>
+                    </fieldset>
+                    <fieldset id="make-pdf-box">
+                        <button id="make-pdf">Make PDF!</button>
+                    </fieldset>
                 </div>
             </div>
         </div>

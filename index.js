@@ -20,12 +20,17 @@ document.body.className = 'main';
 
 let currentYDKContent = '';
 
-const _artworkUrlYGOPD = ((passcode) =>
+const _artworkFn = ((fn) =>
+{
+    fn.sample = (async () => { const img = new Image(); img.src = await fn('46986414'); await img.decode(); return img; })();
+    return fn;
+});
+const _artworkUrlYGOPD = _artworkFn(async (passcode) =>
 {
     return new URL('https://storage.googleapis.com/ygoprodeck.com/pics/'+(+passcode)+'.jpg');
 });
 
-const _artworkUrlNeuron = (async (passcode) =>
+const _artworkUrlNeuron = _artworkFn(async (passcode) =>
 {
     const {cardId, artId} = await window.ResolvePasscode(passcode);
     await window.ArtworksReady;
@@ -123,8 +128,8 @@ const ValidateInputAndGenerateParameters = (() =>
     const printedWidth = cardsPerRow*(cardWidth+gap[0])-gap[0];
     const printedHeight = rowsPerPage*(cardHeight+gap[1])-gap[1];
     const start = [
-        printMargins.left + ((isLandscape ? printableHeight : printableWidth)-printedWidth)/2,
-        printMargins.top + ((isLandscape ? printableWidth : printableHeight)-printedHeight)/2
+        (isLandscape ? printMargins.top : printMargins.left) + ((isLandscape ? printableHeight : printableWidth)-printedWidth)/2,
+        (isLandscape ? printMargins.right : printMargins.top) + ((isLandscape ? printableWidth : printableHeight)-printedHeight)/2
     ];
     
     let artworkFn;
@@ -138,6 +143,7 @@ const ValidateInputAndGenerateParameters = (() =>
         orientation,
         format,
         pageSize,
+        printOffsetsRotated: (isLandscape ? [printMargins.top, printMargins.right] : [printMargins.left, printMargins.top]),
         printableSize: [ printableWidth, printableHeight ],
         
         cardSize,
@@ -151,23 +157,83 @@ const ValidateInputAndGenerateParameters = (() =>
     };
 });
 
+const _cardback = (async () => { const i = new Image(); i.src = 'img/card_back.png'; await i.decode(); return i; })();
 const VisualizeOutputParameters = ((params) =>
 {
     if (!params)
     {
-        document.getElementById('tmp-summary').innerText = 'Something has gone terribly wrong...';
+        document.getElementById('count-cards') = '?';
+        document.getElementById('cards-per-page') = '?';
+        document.getElementById('pages-to-print') = '?';
+        document.getElementById('make-pdf').disabled = true;
         return;
     }
-    const hasDeck = !!params.passcodes.length;
-    document.getElementById('make-pdf').disabled = !hasDeck;
+    const cardCount = params.passcodes.length;
+    const hasDeck = (cardCount === 0);
     const cardsPerPage = (params.cardsPerRow * params.rowsPerPage);
     const pageCount = Math.ceil(params.passcodes.length / cardsPerPage);
-    document.getElementById('tmp-summary').innerText = (
-        'Orientation: ' + params.orientation + '\n' +
-        'Cards per page: ' + cardsPerPage + ' (' + params.cardsPerRow + ' by ' + params.rowsPerPage + ')\n' +
-        'PDF will contain: ' + pageCount + ' page' + ((pageCount === 1) ? '' : 's') + ' (' + params.passcodes.length + ' card' + ((params.passcodes.length === 1) ? '' : 's') + ')\n' +
-        (hasDeck ? 'All set!' : 'Deck file missing')
-    );
+    document.getElementById('count-cards').innerText = params.passcodes.length;
+    document.getElementById('cards-per-page').innerText = cardsPerPage;
+    document.getElementById('pages-to-print').innerText = pageCount;
+    document.getElementById('make-pdf').disabled = !hasDeck;
+    
+    const tok = {};
+    const cardPreviewCanvas = document.getElementById('card-preview');
+    cardPreviewCanvas.tok = tok;
+    (async () =>
+    {
+        const PX_PER_MM = 13;
+        // sleeves are 62 by 89 mm
+        // cards are 59 by 86 mm
+        const cardBack = await _cardback;
+        const sampleArt = await params.artworkFn.sample;
+        if (cardPreviewCanvas.tok !== tok) return;
+        const ctx = cardPreviewCanvas.getContext('2d');
+        ctx.fillStyle = 'rgba(39, 68, 63, 1)';
+        ctx.fillRect(0, 0, PX_PER_MM * 62, PX_PER_MM * 89);
+        ctx.drawImage(cardBack, PX_PER_MM * 1.5, PX_PER_MM * 1.5, PX_PER_MM * 59, PX_PER_MM * 86);
+        
+        const [proxyWidth, proxyHeight] = params.cardSize;
+        const offX = (62 - proxyWidth) / 2;
+        const offY = (89 - proxyHeight) / 2;
+        ctx.drawImage(sampleArt, PX_PER_MM * offX, PX_PER_MM * offY, PX_PER_MM * proxyWidth, PX_PER_MM * proxyHeight);
+        
+        /* give it a matte sleeve-like look */
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(0, 0, PX_PER_MM * 62, PX_PER_MM * 89);
+    })();
+    
+    const pagePreviewCanvas = document.getElementById('page-preview');
+    pagePreviewCanvas.tok = tok;
+    (async () =>
+    {
+        const sampleArt = await params.artworkFn.sample;
+        if (pagePreviewCanvas.tok !== tok) return;
+        const ctx = pagePreviewCanvas.getContext('2d');
+        ctx.clearRect(0, 0, pagePreviewCanvas.width, pagePreviewCanvas.height);
+        const isLandscape = (params.orientation === 'landscape');
+        const rotatedPageWidth = params.pageSize[isLandscape ? 1 : 0];
+        const rotatedPageHeight = params.pageSize[isLandscape ? 0 : 1];
+        const PX_PER_MM = Math.min(pagePreviewCanvas.width / rotatedPageWidth, pagePreviewCanvas.height / rotatedPageHeight);
+        const drawLeft = (pagePreviewCanvas.width-(rotatedPageWidth*PX_PER_MM))/2;
+        const drawTop = (pagePreviewCanvas.height-(rotatedPageHeight*PX_PER_MM))/2;
+        
+        ctx.fillStyle = '#fcc';
+        ctx.fillRect(drawLeft, drawTop, rotatedPageWidth * PX_PER_MM, rotatedPageHeight * PX_PER_MM);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(
+            drawLeft + params.printOffsetsRotated[0]*PX_PER_MM,
+            drawTop + params.printOffsetsRotated[1]*PX_PER_MM,
+            params.printableSize[isLandscape ? 1 : 0]*PX_PER_MM,
+            params.printableSize[isLandscape ? 0 : 1]*PX_PER_MM
+        );
+        for (let x=0; x<params.cardsPerRow; ++x) for (let y=0; y<params.rowsPerPage; ++y)
+        {
+            const left = drawLeft + (params.start[0] + x*(params.cardSize[0]+params.gap[0]))*PX_PER_MM;
+            const top = drawTop + (params.start[1] + y*(params.cardSize[1]+params.gap[1]))*PX_PER_MM;
+            ctx.drawImage(sampleArt, left, top, PX_PER_MM * params.cardSize[0], PX_PER_MM * params.cardSize[1]);
+        }
+    })();
 });
 
 const GeneratePDFFromParameters = (async (params) =>
@@ -190,7 +256,7 @@ const GeneratePDFFromParameters = (async (params) =>
     await Promise.all(params.passcodes.map(async (p,i) =>
     {
         const imgElm = new Image();
-        imgElm.src = await Promise.resolve(params.artworkFn(p));
+        imgElm.src = await params.artworkFn(p);
         await imgElm.decode();
         
         const {page, coords: [x,y]} = _place(i);
@@ -265,7 +331,7 @@ const _getOptimalRelativeSizes = ((arr) =>
     return optima;
 });
 const _nextLowerSize = ((table, my) => { for (const {sz, n} of table) if (n > my) return sz; return NaN; });
-const _nextHigherSize = ((table, my) => { let old = NaN; for (const {sz, n} of table){ console.log(my,sz,n); if (n >= my) break; else old = sz;} return old; })
+const _nextHigherSize = ((table, my) => { let old = NaN; for (const {sz, n} of table) if (n >= my) break; else old = sz; return old; })
 let _cardSizeStep; _cardSizeStep = ((reduce) =>
 {
     const { printableSize: [printableWidth, printableHeight], gap: [gapX, gapY], cardsPerRow, rowsPerPage } =  ValidateInputAndGenerateParameters();
@@ -292,8 +358,6 @@ let _cardSizeStep; _cardSizeStep = ((reduce) =>
     {
         const nextHigherP = _nextHigherSize(tablePortrait, cardsPerPage);
         const nextHigherL = _nextHigherSize(tableLandscape, cardsPerPage);
-        console.log(tablePortrait, tableLandscape);
-        console.log(nextHigherP, nextHigherL);
         let target;
         if (!isFinite(nextHigherL) || ((nextHigherL-currentSize) < 0.05) || (orientationSetting === 'portrait'))
             target = nextHigherP;

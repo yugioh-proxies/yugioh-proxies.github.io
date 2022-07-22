@@ -7,6 +7,7 @@ body:not(.main)     #main-screen
 
 html, body { margin: 0; height: 100%; width: 100%; }
 body { background: #ccc; display: flex; justify-content: center; align-items: center; }
+body { font-family: verdana, arial, helvetica, sans-serif; }
 
 .screen
 {
@@ -59,4 +60,33 @@ body { background: #ccc; display: flex; justify-content: center; align-items: ce
 
 #card-size-percent-box { display: flex; flex-direction: row; justify-content: space-evenly; }
 
-#tmp-summary { margin-bottom: 1em; }
+#output-box { display: grid; }
+#pagecount-box { grid-row: 1; grid-column: 1 / span 2; }
+#card-preview-box { grid-row: 2; grid-column: 1; }
+#page-preview-box { grid-row: 2; grid-column: 2; }
+#make-pdf-box { grid-row: 3; grid-column: 1 / span 2; }
+
+#card-preview, #page-preview { max-width: min(20vh,40vw); max-height: min(20vh,40vw); }
+#pagecount-box
+{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    font-size: 150%;
+}
+#pagecount-box-ctr
+{
+    display: grid;
+    align-items: baseline;
+    grid-gap: 0 0.3em;
+}
+#pagecount-box span.num { font-size: 200%; justify-self: flex-end; }
+#pagecount-box hr { grid-column: 1 / span 3; width: 100%; }
+#make-pdf-box
+{
+    margin-top: 1em;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+#make-pdf { text-align: left; }
