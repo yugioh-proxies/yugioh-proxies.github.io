@@ -52,7 +52,7 @@ body { font-family: verdana, arial, helvetica, sans-serif; }
     align-items: flex-start;
 }
 
-#card-size-percent, #card-width, #card-height, #gap-width, #gap-height { width: 3em; }
+#card-size-percent, #card-width, #card-height, #gap-width, #gap-height { width: 3.2em; text-align: center; }
 
 #lock-aspect-ratio:not(:checked) ~ #card-size-percent-box,
 #lock-aspect-ratio:checked       ~ #card-size-loose-box
