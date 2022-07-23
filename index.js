@@ -89,15 +89,15 @@ const ValidateInputAndGenerateParameters = (() =>
     let cardSize;
     if (document.getElementById('lock-aspect-ratio').checked)
     {
-        const aspectRatio = .01*+document.getElementById('card-size-percent').value;
-        cardSize = [(BASE_CARD_WIDTH * aspectRatio), (BASE_CARD_HEIGHT * aspectRatio)];
-        document.getElementById('card-width').value = cardSize[0].toPrecision(2);
-        document.getElementById('card-height').value = cardSize[1].toPrecision(2);
+        const relativeSize = .01*+document.getElementById('card-size-percent').value;
+        cardSize = [(BASE_CARD_WIDTH * relativeSize), (BASE_CARD_HEIGHT * relativeSize)];
+        document.getElementById('card-width').value = cardSize[0].toFixed(2);
+        document.getElementById('card-height').value = cardSize[1].toFixed(2);
     }
     else
     {
         cardSize = [+document.getElementById('card-width').value, +document.getElementById('card-height').value];
-        document.getElementById('card-size-percent').value = ((cardSize[0]/BASE_CARD_WIDTH)*100).toPrecision(2);
+        document.getElementById('card-size-percent').value = (((cardSize[0]/BASE_CARD_WIDTH)*100)-0.005).toFixed(2);
     }
     const [cardWidth, cardHeight] = cardSize;
     const cardAspectRatio = cardSize[0]/cardSize[1];
