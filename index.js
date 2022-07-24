@@ -194,9 +194,9 @@ const VisualizeOutputParameters = ((params) =>
 {
     if (!params)
     {
-        __elmById('count-cards').innerText = '?';
-        __elmById('cards-per-page').innerText = '?';
-        __elmById('pages-to-print').innerText = '?';
+        __elmById('count-cards').innerText = __elmById('count-cards2').innerText = '?';
+        __elmById('cards-per-page').innerText = __elmById('cards-per-page2').innerText = '?';
+        __elmById('pages-to-print').innerText = __elmById('pages-to-print2').innerText = '?';
         __elmById('make-pdf').disabled = true;
         return;
     }
@@ -204,18 +204,18 @@ const VisualizeOutputParameters = ((params) =>
     const cardsPerPage = (params.cardsPerRow * params.rowsPerPage);
     
     const cardCount = params.passcodes.length;
-    __elmById('count-cards').innerText = params.passcodes.length;
-    __elmById('cards-per-page').innerText = cardsPerPage;
+    __elmById('count-cards').innerText = __elmById('count-cards2').innerText = params.passcodes.length;
+    __elmById('cards-per-page').innerText = __elmById('cards-per-page2').innerText = cardsPerPage;
     
     if (!cardsPerPage)
     {
-        __elmById('pages-to-print').innerText = '\u221E';
+        __elmById('pages-to-print').innerText = __elmById('pages-to-print2').innerText = '\u221E';
         __elmById('make-pdf').disabled = true;
         return;
     }
     
     const pageCount = Math.ceil(params.passcodes.length / cardsPerPage);
-    __elmById('pages-to-print').innerText = pageCount;
+    __elmById('pages-to-print').innerText = __elmById('pages-to-print2').innerText = pageCount;
     __elmById('make-pdf').disabled = (cardCount !== 0);
     
     const tok = {};
@@ -495,23 +495,68 @@ _decklistInput.addEventListener('change', () =>
     entry.appendChild(cards);
     entry.appendChild(del);
     
+    const _updateCardsText = (() =>
+    {
+        const nEnabled = entry.passcodes.reduce((a, {enabled}) => a + enabled, 0);
+        const nTotal = entry.passcodes.length;
+        cards.innerText = (nEnabled+'/'+nTotal+' selected')
+    });
+    
     parent.appendChild(entry);
     file.text().then((t) =>
     {
         entry.classList.remove('loading');
         entry.passcodes = t.split('\n').map((t) => parseInt(t.trim())).filter(isFinite).map((passcode) => ({ passcode, enabled: true }));
-        cards.innerText = ((entry.passcodes.length)+'/'+(entry.passcodes.length)+' selected');
+        _updateCardsText();
         ProcessInputUpdateOutput();
+        if (entry.delayedOpen)
+            entry.click();
     });
     
     entry.addEventListener('click', (e) => 
     {
         if (e.target.classList.contains('delete'))
             return;
-        window.alert('not yet implemented, sorry');
+        if (entry.classList.contains('loading'))
+        {
+            entry.delayedOpen = true;
+            return;
+        }
+        
+        document.body.classList.add('deck-select');
+        
+        const container = __elmById('deck-select-ctr');
+        while (container.lastElementChild)
+            container.removeChild(container.lastElementChild);
+        
+        for (const obj of entry.passcodes)
+        {
+            const box = document.createElement('div');
+            const img = document.createElement('img');
+            box.className = 'card-proxy';
+            Promise.any([_artworkUrlYGOPD(obj.passcode).ready, _artworkUrlNeuron(obj.passcode).ready]).then((a) => { img.src = a.src; });
+            if (!obj.enabled)
+                box.classList.add('disabled');
+            box.addEventListener('click', () =>
+            {
+                obj.enabled = !obj.enabled;
+                box.classList.toggle('disabled', !obj.enabled);
+                _updateCardsText();
+                ProcessInputUpdateOutput();
+            });
+            
+            box.appendChild(img);
+            container.appendChild(box);
+        }
     });
 });
 
+const _toggleDeckSelectIf = ((pred) => { for (const elm of __elmById('deck-select-ctr').children) if (pred(elm)) elm.click(); });
+__elmById('deck-select-all').addEventListener('click', () => { _toggleDeckSelectIf((e) => e.classList.contains('disabled')); });
+__elmById('deck-select-none').addEventListener('click', () => { _toggleDeckSelectIf((e) => !e.classList.contains('disabled')); });
+__elmById('deck-select-invert').addEventListener('click', () => { _toggleDeckSelectIf(()=>true); });
+
+__elmById('deck-select-overlay-bg').addEventListener('click', () => { document.body.classList.remove('deck-select'); });
 __elmById('make-pdf').addEventListener('click', () => { GeneratePDFFromParameters(_currentGenerationParameters); });
 
 })();
