@@ -148,6 +148,11 @@ const ValidateInputAndGenerateParameters = (() =>
     const cardsPerRow = isLandscape ? cardsPerRowLandscape : cardsPerRowPortrait;
     const rowsPerPage = isLandscape ? rowsPerPageLandscape : rowsPerPagePortrait;
     
+    if (!cardsPerRow || !rowsPerPage)
+    {
+        console.warn('Card size exceeds printable size, nothing will be printed');
+    }
+    
     const pageSize = [pageWidth, pageHeight];
     
     const printedWidth = cardsPerRow*(cardWidth+gap[0])-gap[0];
@@ -193,14 +198,23 @@ const VisualizeOutputParameters = ((params) =>
         document.getElementById('make-pdf').disabled = true;
         return;
     }
-    const cardCount = params.passcodes.length;
-    const hasDeck = (cardCount !== 0);
+    
     const cardsPerPage = (params.cardsPerRow * params.rowsPerPage);
-    const pageCount = Math.ceil(params.passcodes.length / cardsPerPage);
+    
+    const cardCount = params.passcodes.length;
     document.getElementById('count-cards').innerText = params.passcodes.length;
     document.getElementById('cards-per-page').innerText = cardsPerPage;
+    
+    if (!cardsPerPage)
+    {
+        document.getElementById('pages-to-print').innerText = '\u221E';
+        document.getElementById('make-pdf').disabled = true;
+        return;
+    }
+    
+    const pageCount = Math.ceil(params.passcodes.length / cardsPerPage);
     document.getElementById('pages-to-print').innerText = pageCount;
-    document.getElementById('make-pdf').disabled = !hasDeck;
+    document.getElementById('make-pdf').disabled = (cardCount !== 0);
     
     const tok = {};
     const cardPreviewCanvas = document.getElementById('card-preview');

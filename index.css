@@ -36,12 +36,12 @@ body { font-family: verdana, arial, helvetica, sans-serif; }
     flex-direction: row;
     justify-content: center;
     align-items: flex-start;
+    gap: 10vmin;
 }
 @media (orientation: portrait) { #main-row { flex-direction: column; align-items: stretch; } }
 
 .main-box
 {
-    margin: 5vmin;
     padding: 2em;
     border: 2px solid #666;
     border-radius: 3vmin;
@@ -79,16 +79,15 @@ body { font-family: verdana, arial, helvetica, sans-serif; }
     display: flex;
     flex-direction: column;
     align-items: start;
-    font-size: 150%;
 }
 #pagecount-box-ctr
 {
     display: grid;
     align-items: baseline;
     grid-gap: 0 0.3em;
+    font-size: 150%;
 }
 #pagecount-box span.num { font-size: 200%; justify-self: flex-end; }
-#pagecount-box hr { grid-column: 1 / span 3; width: 100%; }
 #make-pdf-box
 {
     margin-top: 1em;
