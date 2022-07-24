@@ -13,6 +13,8 @@ if (!window.ResolvePasscode)
     return;
 }
 
+const __elmById = ((i) => document.getElementById(i));
+
 const BASE_CARD_WIDTH = 59;
 const BASE_CARD_HEIGHT = 86;
 
@@ -68,7 +70,7 @@ const _fitThisMany = ((space, gap, n) => (((space+gap)/n)-gap));
 const ValidateInputAndGenerateParameters = (() =>
 {
     const passcodes = [];
-    for (const elm of document.getElementById('decks-container').children)
+    for (const elm of __elmById('decks-container').children)
     {
         const p = elm.passcodes;
         if (!p) continue;
@@ -87,17 +89,17 @@ const ValidateInputAndGenerateParameters = (() =>
     }
     
     let cardSize;
-    if (document.getElementById('lock-aspect-ratio').checked)
+    if (__elmById('lock-aspect-ratio').checked)
     {
-        const relativeSize = .01*+document.getElementById('card-size-percent').value;
+        const relativeSize = .01*+__elmById('card-size-percent').value;
         cardSize = [(BASE_CARD_WIDTH * relativeSize), (BASE_CARD_HEIGHT * relativeSize)];
-        document.getElementById('card-width').value = cardSize[0].toFixed(2);
-        document.getElementById('card-height').value = cardSize[1].toFixed(2);
+        __elmById('card-width').value = cardSize[0].toFixed(2);
+        __elmById('card-height').value = cardSize[1].toFixed(2);
     }
     else
     {
-        cardSize = [+document.getElementById('card-width').value, +document.getElementById('card-height').value];
-        document.getElementById('card-size-percent').value = (((cardSize[0]/BASE_CARD_WIDTH)*100)-0.005).toFixed(2);
+        cardSize = [+__elmById('card-width').value, +__elmById('card-height').value];
+        __elmById('card-size-percent').value = (((cardSize[0]/BASE_CARD_WIDTH)*100)-0.005).toFixed(2);
     }
     const [cardWidth, cardHeight] = cardSize;
     const cardAspectRatio = cardSize[0]/cardSize[1];
@@ -112,7 +114,7 @@ const ValidateInputAndGenerateParameters = (() =>
     
     // todo sanity check margins
     
-    const gap = [+document.getElementById('gap-width').value,+document.getElementById('gap-height').value];
+    const gap = [+__elmById('gap-width').value,+__elmById('gap-height').value];
     
     const printableWidth = pageWidth - (printMargins.left + printMargins.right);
     const printableHeight = pageHeight - (printMargins.top + printMargins.bottom);
@@ -192,32 +194,32 @@ const VisualizeOutputParameters = ((params) =>
 {
     if (!params)
     {
-        document.getElementById('count-cards') = '?';
-        document.getElementById('cards-per-page') = '?';
-        document.getElementById('pages-to-print') = '?';
-        document.getElementById('make-pdf').disabled = true;
+        __elmById('count-cards').innerText = '?';
+        __elmById('cards-per-page').innerText = '?';
+        __elmById('pages-to-print').innerText = '?';
+        __elmById('make-pdf').disabled = true;
         return;
     }
     
     const cardsPerPage = (params.cardsPerRow * params.rowsPerPage);
     
     const cardCount = params.passcodes.length;
-    document.getElementById('count-cards').innerText = params.passcodes.length;
-    document.getElementById('cards-per-page').innerText = cardsPerPage;
+    __elmById('count-cards').innerText = params.passcodes.length;
+    __elmById('cards-per-page').innerText = cardsPerPage;
     
     if (!cardsPerPage)
     {
-        document.getElementById('pages-to-print').innerText = '\u221E';
-        document.getElementById('make-pdf').disabled = true;
+        __elmById('pages-to-print').innerText = '\u221E';
+        __elmById('make-pdf').disabled = true;
         return;
     }
     
     const pageCount = Math.ceil(params.passcodes.length / cardsPerPage);
-    document.getElementById('pages-to-print').innerText = pageCount;
-    document.getElementById('make-pdf').disabled = (cardCount !== 0);
+    __elmById('pages-to-print').innerText = pageCount;
+    __elmById('make-pdf').disabled = (cardCount !== 0);
     
     const tok = {};
-    const cardPreviewCanvas = document.getElementById('card-preview');
+    const cardPreviewCanvas = __elmById('card-preview');
     cardPreviewCanvas.tok = tok;
     (async () =>
     {
@@ -250,7 +252,7 @@ const VisualizeOutputParameters = ((params) =>
         ctx.fillRect(0, 0, PX_PER_MM * 62, PX_PER_MM * 89);
     })();
     
-    const pagePreviewCanvas = document.getElementById('page-preview');
+    const pagePreviewCanvas = __elmById('page-preview');
     pagePreviewCanvas.tok = tok;
     (async () =>
     {
@@ -351,10 +353,10 @@ const ProcessInputUpdateOutput = (() =>
 window.setInterval(ProcessInputUpdateOutput, 1000);
 ProcessInputUpdateOutput();
 
-for (const elm of document.getElementById('input-box').getElementsByTagName('select'))
+for (const elm of __elmById('input-box').getElementsByTagName('select'))
     elm.addEventListener('input', ProcessInputUpdateOutput);
 
-for (const elm of document.getElementById('input-box').getElementsByTagName('input'))
+for (const elm of __elmById('input-box').getElementsByTagName('input'))
     elm.addEventListener('change', ProcessInputUpdateOutput);
 
 const _relativeSizeListCache = {};
@@ -428,7 +430,7 @@ let _cardSizeStep; _cardSizeStep = ((reduce) =>
     const orientationSetting = document.querySelector('input[name="orientation"]:checked').value;
     const sortedOptima = GetOptimalRelativeSizes([...params.printableSize, ...params.gap])[orientationSetting];
     
-    const currentSize = +document.getElementById('card-size-percent').value;
+    const currentSize = +__elmById('card-size-percent').value;
     if (reduce)
     {
         let last;
@@ -445,37 +447,37 @@ let _cardSizeStep; _cardSizeStep = ((reduce) =>
                 return (size-0.005).toFixed(2);
     }
 });
-document.getElementById('reduce-card-size').addEventListener('click', () =>
+__elmById('reduce-card-size').addEventListener('click', () =>
 {
     const result = _cardSizeStep(true);
     if (!result) return;
-    document.getElementById('card-size-percent').value = result;
+    __elmById('card-size-percent').value = result;
     ProcessInputUpdateOutput();
 });
-document.getElementById('increase-card-size').addEventListener('click', () =>
+__elmById('increase-card-size').addEventListener('click', () =>
 {
     const result = _cardSizeStep(false);
     if (!result) return;
-    document.getElementById('card-size-percent').value = result;
+    __elmById('card-size-percent').value = result;
     ProcessInputUpdateOutput();
 });
 
-document.getElementById('decks-container').addEventListener('click', function(e)
+__elmById('decks-container').addEventListener('click', function(e)
 {
     if (e.target.closest('.entry'))
         return;
     if (!this.children.length)
-        document.getElementById('decklist').click();
+        __elmById('decklist').click();
 });
 
-const _decklistInput = document.getElementById('decklist');
+const _decklistInput = __elmById('decklist');
 _decklistInput.addEventListener('change', () =>
 {
     const file = _decklistInput.files[0];
     if (!file) return;
     _decklistInput.value = '';
     
-    const parent = document.getElementById('decks-container');
+    const parent = __elmById('decks-container');
     const entry = document.createElement('div');
     entry.style.backgroundColor = ('hsl('+(180+parent.children.length*74)+'deg, 100%, 75%)');
     entry.className = 'entry loading';
@@ -510,6 +512,6 @@ _decklistInput.addEventListener('change', () =>
     });
 });
 
-document.getElementById('make-pdf').addEventListener('click', () => { GeneratePDFFromParameters(_currentGenerationParameters); });
+__elmById('make-pdf').addEventListener('click', () => { GeneratePDFFromParameters(_currentGenerationParameters); });
 
 })();
