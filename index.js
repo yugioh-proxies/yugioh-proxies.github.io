@@ -204,7 +204,7 @@ const VisualizeOutputParameters = ((params) =>
     const cardsPerPage = (params.cardsPerRow * params.rowsPerPage);
     
     const cardCount = params.passcodes.length;
-    __elmById('count-cards').innerText = __elmById('count-cards2').innerText = params.passcodes.length;
+    __elmById('count-cards').innerText = __elmById('count-cards2').innerText = cardCount;
     __elmById('cards-per-page').innerText = __elmById('cards-per-page2').innerText = cardsPerPage;
     
     if (!cardsPerPage)
@@ -214,9 +214,9 @@ const VisualizeOutputParameters = ((params) =>
         return;
     }
     
-    const pageCount = Math.ceil(params.passcodes.length / cardsPerPage);
+    const pageCount = Math.ceil(cardCount / cardsPerPage);
     __elmById('pages-to-print').innerText = __elmById('pages-to-print2').innerText = pageCount;
-    __elmById('make-pdf').disabled = (cardCount === 0);
+    __elmById('make-pdf').disabled = !cardCount;
     
     const tok = {};
     const cardPreviewCanvas = __elmById('card-preview');
@@ -228,7 +228,7 @@ const VisualizeOutputParameters = ((params) =>
         // cards are 59 by 86 mm
         const cardBack = await _cardback;
         let sampleArt;
-        if (params.passcodes.length)
+        if (0 < params.passcodes.length)
             sampleArt = params.artworkFn(params.passcodes[0]);
         
         if (sampleArt && sampleArt.isReady)
