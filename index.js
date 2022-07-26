@@ -216,7 +216,7 @@ const VisualizeOutputParameters = ((params) =>
     
     const pageCount = Math.ceil(params.passcodes.length / cardsPerPage);
     __elmById('pages-to-print').innerText = __elmById('pages-to-print2').innerText = pageCount;
-    __elmById('make-pdf').disabled = (cardCount !== 0);
+    __elmById('make-pdf').disabled = (cardCount === 0);
     
     const tok = {};
     const cardPreviewCanvas = __elmById('card-preview');
