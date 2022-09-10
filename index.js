@@ -470,23 +470,26 @@ __elmById('decks-container').addEventListener('click', function(e)
         __elmById('decklist').click();
 });
 
-const _decklistInput = __elmById('decklist');
-_decklistInput.addEventListener('change', () =>
+const _updateCardsText = ((entry) =>
 {
-    const file = _decklistInput.files[0];
-    if (!file) return;
-    _decklistInput.value = '';
-    
+    const nEnabled = entry.passcodes.reduce((a, {enabled}) => a + enabled, 0);
+    const nTotal = entry.passcodes.length;
+    entry.statusText.innerText = (nEnabled+'/'+nTotal+' selected')
+});
+
+const _newDecklistEntry = ((deckName) =>
+{
     const parent = __elmById('decks-container');
     const entry = document.createElement('div');
     entry.style.backgroundColor = ('hsl('+(180+parent.children.length*74)+'deg, 100%, 75%)');
     entry.className = 'entry loading';
     const cards = document.createElement('span');
     cards.className = 'status';
-    cards.innerText = 'Loading…';
+    cards.innerText = 'Loading\u2026';
+    entry.statusText = cards;
     const name = document.createElement('span');
     name.className = 'name';
-    name.innerText = file.name;
+    name.innerText = deckName;
     const del = document.createElement('span');
     del.className = 'delete';
     del.innerText = '\uD83D\uDDD1\uFE0E';
@@ -494,24 +497,7 @@ _decklistInput.addEventListener('change', () =>
     entry.appendChild(name);
     entry.appendChild(cards);
     entry.appendChild(del);
-    
-    const _updateCardsText = (() =>
-    {
-        const nEnabled = entry.passcodes.reduce((a, {enabled}) => a + enabled, 0);
-        const nTotal = entry.passcodes.length;
-        cards.innerText = (nEnabled+'/'+nTotal+' selected')
-    });
-    
     parent.appendChild(entry);
-    file.text().then((t) =>
-    {
-        entry.classList.remove('loading');
-        entry.passcodes = t.split('\n').map((t) => parseInt(t.trim())).filter(isFinite).map((passcode) => ({ passcode, enabled: true }));
-        _updateCardsText();
-        ProcessInputUpdateOutput();
-        if (entry.delayedOpen)
-            entry.click();
-    });
     
     entry.addEventListener('click', (e) => 
     {
@@ -541,7 +527,7 @@ _decklistInput.addEventListener('change', () =>
             {
                 obj.enabled = !obj.enabled;
                 box.classList.toggle('disabled', !obj.enabled);
-                _updateCardsText();
+                _updateCardsText(entry);
                 ProcessInputUpdateOutput();
             });
             
@@ -549,7 +535,85 @@ _decklistInput.addEventListener('change', () =>
             container.appendChild(box);
         }
     });
+    
+    return entry;
 });
+
+const _decklistInput = __elmById('decklist');
+_decklistInput.addEventListener('change', () =>
+{
+    const file = _decklistInput.files[0];
+    if (!file) return;
+    _decklistInput.value = '';
+    
+    const entry = _newDecklistEntry(file.name);
+    
+    file.text().then((t) =>
+    {
+        entry.classList.remove('loading');
+        entry.passcodes = t.split('\n').map((t) => parseInt(t.trim())).filter(isFinite).map((passcode) => ({ passcode, enabled: true }));
+        _updateCardsText(entry);
+        ProcessInputUpdateOutput();
+        if (entry.delayedOpen)
+            entry.click();
+    });
+});
+
+const _consumeFragment = (() =>
+{
+    const fragment = document.location.hash;
+    if (!fragment)
+        return;
+    
+    for (const deck of fragment.substring(1).split(';'))
+    {
+        try
+        {
+            if (!deck)
+                continue;
+            const parts = deck.split(',');
+            if (parts.length !== 3)
+                continue;
+            if (parts[1].toLowerCase() !== 'ydke')
+                continue;
+            const deckName = decodeURIComponent(parts[0]);
+            
+            const ydkeData = parts[2];
+            const passcodes = [];
+            for (const deckData of ydkeData.split('!').map(atob))
+            {
+                const n = deckData.length;
+                if ((n % 4) !== 0)
+                    throw ('Invalid YDKe deck data (length not multiple of 4, length = '+n+')');
+                for (let i=0; i<n; i += 4)
+                {
+                    passcodes.push({
+                        passcode: (
+                            (deckData.charCodeAt(i+0) <<  0) |
+                            (deckData.charCodeAt(i+1) <<  8) |
+                            (deckData.charCodeAt(i+2) << 16) |
+                            (deckData.charCodeAt(i+3) << 24)),
+                        enabled: true,
+                    });
+                }
+            }
+            
+            const entry = _newDecklistEntry(deckName);
+            entry.classList.remove('loading');
+            entry.passcodes = passcodes;
+            _updateCardsText(entry);
+            if (entry.delayedOpen)
+                entry.click();
+        } catch (e) {
+            console.warn('Failed to load deck', deck, e);
+        }
+    }
+    
+    ProcessInputUpdateOutput();
+});
+
+window.addEventListener('hashchange', _consumeFragment);
+_consumeFragment();
 
 const _toggleDeckSelectIf = ((pred) => { for (const elm of __elmById('deck-select-ctr').children) if (pred(elm)) elm.click(); });
 __elmById('deck-select-all').addEventListener('click', () => { _toggleDeckSelectIf((e) => e.classList.contains('disabled')); });
