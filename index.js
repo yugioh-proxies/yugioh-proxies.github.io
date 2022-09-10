@@ -557,6 +557,7 @@ __elmById('deck-select-none').addEventListener('click', () => { _toggleDeckSelec
 __elmById('deck-select-invert').addEventListener('click', () => { _toggleDeckSelectIf(()=>true); });
 
 __elmById('deck-select-overlay-bg').addEventListener('click', () => { document.body.classList.remove('deck-select'); });
+document.addEventListener('keyup', (e) => { if (e.key === 'Escape') document.body.classList.remove('deck-select'); });
 __elmById('make-pdf').addEventListener('click', () => { GeneratePDFFromParameters(_currentGenerationParameters); });
 
 })();
