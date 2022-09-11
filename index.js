@@ -493,7 +493,7 @@ const _newDecklistEntry = ((deckName) =>
     const del = document.createElement('span');
     del.className = 'delete';
     del.innerText = '\uD83D\uDDD1\uFE0E';
-    del.addEventListener('click', () => { parent.removeChild(entry); });
+    del.addEventListener('click', () => { parent.removeChild(entry); if (!parent.children.length) try { window.history.replaceState(undefined, undefined, '/'); } catch(e) {} });
     entry.appendChild(name);
     entry.appendChild(cards);
     entry.appendChild(del);
