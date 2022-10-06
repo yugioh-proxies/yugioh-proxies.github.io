@@ -48,7 +48,7 @@ const _artworkFn = ((fn) =>
 });
 const _artworkUrlYGOPD = _artworkFn(async (passcode) =>
 {
-    return new URL('https://storage.googleapis.com/ygoprodeck.com/pics/'+(+passcode)+'.jpg');
+    return new URL('https://images.ygoprodeck.com/images/cards/'+(+passcode)+'.jpg');
 });
 
 const _artworkUrlNeuron = _artworkFn(async (passcode) =>
