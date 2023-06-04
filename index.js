@@ -46,16 +46,40 @@ const _artworkFn = ((fn) =>
     wrapper(SAMPLE_PASSCODE)
     return wrapper;
 });
-const _artworkUrlYGOPD = _artworkFn(async (passcode) =>
+const _artworkYGOPD = _artworkFn(async (passcode) =>
 {
     return new URL('https://images.ygoprodeck.com/images/cards/'+(+passcode)+'.jpg');
 });
 
-const _artworkUrlNeuron = _artworkFn(async (passcode) =>
+const _artworkNeuron = _artworkFn(async (passcode) =>
 {
     const {cardId, artId} = await window.ResolvePasscode(passcode);
     await window.ArtworksReady;
     return window.GetArtworkURL(cardId, artId);
+});
+const _artworkEDO = _artworkFn(async (passcode) =>
+{
+    return new URL('https://pics.projectignis.org:2096/pics/'+(+passcode)+'.jpg');
+});
+const FALLBACK_ARTWORK = _GetArtworkTemplate(()=>Promise.resolve('/img/no_artwork.png'), 0);
+const _artworkFallback = (() => FALLBACK_ARTWORK);
+
+const GetArtwork = ((passcode, preferredFn) => {
+    const obj = {
+        isReady: false
+    };
+    obj.ready = (async () =>
+    {
+        for (const tryFn of [preferredFn, _artworkYGOPD, _artworkNeuron, _artworkEDO, _artworkFallback]) {
+            const nextArtwork = tryFn(passcode);
+            if (!nextArtwork.isReady) try { await nextArtwork.ready; } catch(e) {}
+            if (!nextArtwork.isReady) continue;
+            obj.artwork = nextArtwork.artwork;
+            obj.isReady = true;
+            return obj.artwork;
+        }
+    })();
+    return obj;
 });
 
 const DEFAULT_FORMATS = {
@@ -165,10 +189,11 @@ const ValidateInputAndGenerateParameters = (() =>
     ];
     
     let artworkFn;
-    if (document.querySelector('input[name="artwork-source"]:checked').value === 'neuron')
-        artworkFn = _artworkUrlNeuron;
-    else
-        artworkFn = _artworkUrlYGOPD;
+    switch (document.querySelector('input[name="artwork-source"]:checked').value) {
+        case 'neuron': artworkFn = _artworkNeuron; break;
+        case 'edopro': artworkFn = _artworkEDO; break;
+        default:       artworkFn = _artworkYGOPD; break;
+    }
     
     return {
         passcodes,
@@ -229,12 +254,12 @@ const VisualizeOutputParameters = ((params) =>
         const cardBack = await _cardback;
         let sampleArt;
         if (0 < params.passcodes.length)
-            sampleArt = params.artworkFn(params.passcodes[0]);
+            sampleArt = GetArtwork(params.passcodes[0], params.artworkFn);
         
         if (sampleArt && sampleArt.isReady)
             sampleArt = sampleArt.artwork;
         else
-            sampleArt = await params.artworkFn(SAMPLE_PASSCODE).ready;
+            sampleArt = await GetArtwork(SAMPLE_PASSCODE, params.artworkFn).ready;
         
         if (cardPreviewCanvas.tok !== tok) return;
         const ctx = cardPreviewCanvas.getContext('2d');
@@ -256,7 +281,7 @@ const VisualizeOutputParameters = ((params) =>
     pagePreviewCanvas.tok = tok;
     (async () =>
     {
-        const defaultSampleArt = await params.artworkFn(SAMPLE_PASSCODE).ready;
+        const defaultSampleArt = await GetArtwork(SAMPLE_PASSCODE, params.artworkFn).ready;
         if (pagePreviewCanvas.tok !== tok) return;
         const ctx = pagePreviewCanvas.getContext('2d');
         ctx.clearRect(0, 0, pagePreviewCanvas.width, pagePreviewCanvas.height);
@@ -281,7 +306,7 @@ const VisualizeOutputParameters = ((params) =>
             const idx = x+y*params.cardsPerRow;
             if (params.passcodes.length && (params.passcodes.length <= idx)) continue;
             
-            let sampleArt = (idx < params.passcodes.length) && params.artworkFn(params.passcodes[idx]);
+            let sampleArt = (idx < params.passcodes.length) && GetArtwork(params.passcodes[idx], params.artworkFn);
             if (sampleArt && sampleArt.isReady)
                 sampleArt = sampleArt.artwork;
             else
@@ -313,7 +338,7 @@ const GeneratePDFFromParameters = (async (params) =>
     
     await Promise.all(params.passcodes.map(async (p,i) =>
     {
-        const artwork = await params.artworkFn(p).ready;
+        const artwork = await GetArtwork(p, params.artworkFn).ready;
         const {page, coords: [x,y]} = _place(i);
         pdf.setPage(page+1);
         pdf.addImage(artwork, 'png', x, y, params.cardSize[0], params.cardSize[1]);
@@ -520,7 +545,7 @@ const _newDecklistEntry = ((deckName) =>
             const box = document.createElement('div');
             const img = document.createElement('img');
             box.className = 'card-proxy';
-            Promise.any([_artworkUrlYGOPD(obj.passcode).ready, _artworkUrlNeuron(obj.passcode).ready]).then((a) => { img.src = a.src; });
+            Promise.any([_artworkYGOPD(obj.passcode).ready, _artworkNeuron(obj.passcode).ready]).then((a) => { img.src = a.src; });
             if (!obj.enabled)
                 box.classList.add('disabled');
             box.addEventListener('click', () =>
